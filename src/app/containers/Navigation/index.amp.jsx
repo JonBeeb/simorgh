@@ -6,6 +6,7 @@ import { AmpScrollableNavigation } from '@bbc/psammead-navigation/scrollable';
 import { AmpMenuButton } from '@bbc/psammead-navigation/dropdown';
 import { GEL_GROUP_2_SCREEN_WIDTH_MAX } from '@bbc/gel-foundations/breakpoints';
 import styled from 'styled-components';
+import Helmet from 'react-helmet';
 
 const HIDDEN_CLASS_NAME = 'scrollable-hidden';
 const SCROLLABLE_ID = 'scrollable-nav';
@@ -20,6 +21,37 @@ const StyledAmpScrollableNavigation = styled(AmpScrollableNavigation)`
     }
   }
 `;
+
+const ampAnimationJSON = {
+  duration: '500ms',
+  animations: [
+    {
+      selector: '#dropdown-menu',
+      keyframes: {
+        transform: ['translateY(-340px)', 'translateY(0px)'],
+      },
+    },
+  ],
+};
+
+const AnimationAmpScript = () => (
+  <>
+    <Helmet>
+      <script
+        async
+        custom-element="amp-animation"
+        src="https://cdn.ampproject.org/v0/amp-animation-0.1.js"
+      />
+    </Helmet>
+    <amp-animation layout="nodisplay" id="dropdown-animation">
+      <script
+        type="application/json"
+        /* eslint-disable-next-line react/no-danger */
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ampAnimationJSON) }}
+      />
+    </amp-animation>
+  </>
+);
 
 const AmpNavigationContainer = ({
   script,
@@ -39,12 +71,14 @@ const AmpNavigationContainer = ({
     id={NAVIGATION_ID}
     ampOpenClass={OPEN_CLASS_NAME}
   >
+    <AnimationAmpScript />
     <AmpMenuButton
       announcedText={menuAnnouncedText}
       onToggle={`
         ${dropdownId}.toggleVisibility,
         ${SCROLLABLE_ID}.toggleClass(class=${HIDDEN_CLASS_NAME}),
-        ${NAVIGATION_ID}.toggleClass(class=${OPEN_CLASS_NAME})
+        ${NAVIGATION_ID}.toggleClass(class=${OPEN_CLASS_NAME}),
+        dropdown-animation.start
       `}
       dir={dir}
       script={script}
