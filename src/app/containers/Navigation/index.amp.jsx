@@ -1,6 +1,6 @@
 import React from 'react';
 import Navigation from '@bbc/psammead-navigation';
-import { node, string, shape } from 'prop-types';
+import { node, string, shape, number } from 'prop-types';
 import { scriptPropType } from '@bbc/gel-foundations/prop-types';
 import { AmpScrollableNavigation } from '@bbc/psammead-navigation/scrollable';
 import { AmpMenuButton } from '@bbc/psammead-navigation/dropdown';
@@ -22,19 +22,40 @@ const StyledAmpScrollableNavigation = styled(AmpScrollableNavigation)`
   }
 `;
 
-const ampAnimationJSON = {
+const PADDING_SIZE = 1.5;
+const BORDER_SIZE = 1 / 16;
+const LIST_BORDER = 1 / 16;
+const BOTTOM_ITEM_PADDING = 4 / 16;
+const NUMBER_IN_LIST = 9; // For testing with Pidgin
+
+const calculateDropdownHeight = (script, numberElements) => {
+  const lineHeight = script.pica.groupA.lineHeight / 16;
+  const dropdownHeight =
+    (lineHeight * 1 + PADDING_SIZE + BORDER_SIZE) * numberElements +
+    LIST_BORDER +
+    BOTTOM_ITEM_PADDING;
+  return dropdownHeight;
+};
+
+const ampAnimationJSON = height => ({
   duration: '500ms',
   animations: [
     {
       selector: '#dropdown-menu',
       keyframes: {
-        transform: ['translateY(-340px)', 'translateY(0px)'],
+        transform: [`translateY(-${height}rem)`, 'translateY(0px)'],
+      },
+    },
+    {
+      selector: 'main',
+      keyframes: {
+        transform: [`translateY(-${height}rem)`, 'translateY(0px)'],
       },
     },
   ],
-};
+});
 
-const AnimationAmpScript = () => (
+const AnimationAmpScript = ({ height }) => (
   <>
     <Helmet>
       <script
@@ -47,11 +68,17 @@ const AnimationAmpScript = () => (
       <script
         type="application/json"
         /* eslint-disable-next-line react/no-danger */
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ampAnimationJSON) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(ampAnimationJSON(height)),
+        }}
       />
     </amp-animation>
   </>
 );
+
+AnimationAmpScript.propTypes = {
+  height: number.isRequired,
+};
 
 const AmpNavigationContainer = ({
   script,
@@ -71,7 +98,9 @@ const AmpNavigationContainer = ({
     id={NAVIGATION_ID}
     ampOpenClass={OPEN_CLASS_NAME}
   >
-    <AnimationAmpScript />
+    <AnimationAmpScript
+      height={calculateDropdownHeight(script, NUMBER_IN_LIST)}
+    />
     <AmpMenuButton
       announcedText={menuAnnouncedText}
       onToggle={`
