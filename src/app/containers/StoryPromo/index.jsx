@@ -194,6 +194,7 @@ const StoryPromo = ({
       }
       topStory={topStory}
       displayImage={displayImage}
+      dir={dir}
     />
   );
 };

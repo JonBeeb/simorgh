@@ -12,9 +12,11 @@ import {
   GEL_SPACING_TRPL,
   GEL_SPACING_QUAD,
 } from '@bbc/gel-foundations/spacings';
+import { grid } from '@bbc/psammead-styles/detection';
 import SectionLabel from '@bbc/psammead-section-label';
 import { C_LUNAR } from '@bbc/psammead-styles/colours';
 import pathOr from 'ramda/src/pathOr';
+import { splitEvery, splitAt, take } from 'ramda';
 import UsefulLinksComponent from './UsefulLinks';
 import { ServiceContext } from '#contexts/ServiceContext';
 import StoryPromo from '../StoryPromo';
@@ -123,107 +125,217 @@ const normalStoryPromoColumns = {
   group5: 2,
 };
 
-const getTopStoryLayout = items => {
-  /* We display 1 top story + 4 regular story promos.The top story spans the whole width
-     We need to be sure that we have 4 story promos on a row.
-     This means that we have to subtract 1(top-story) from the number of items and then divide the result by 4
-     If the number of items was 6: (6-1) % 4 = 1
-     To get the number of items that would fit (1 + 4 regular story promos) we subtract the above result from
-     the number of items: 6 - 1 = 5. 5 is the number of items that fit the combination.
-     */
-  const remainder = (items.length - 1) % 4;
-  const itemsToDisplay = items.length - remainder;
-  // Maximum items to display should be capped to 13 since we are squashing topstories in the preprocessor rules
-  const maxItems = itemsToDisplay > 13 ? 13 : itemsToDisplay;
+// Style grid
+const GridList = styled(Grid)`
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+`;
+const GridListItem = styled(Grid)`
+  border-bottom: 0.0625rem solid ${C_LUNAR};
+  padding: ${GEL_SPACING} 0.5rem ${GEL_SPACING_DBL};
 
-  return {
-    isLeadingStory: () => false,
-    isTopStory: index => index === 0,
-    itemsToDisplay: maxItems,
-    imageDisplayThreshold: 9,
-    columns: index =>
-      index === 0 ? fullWidthStoryPromoColumns : normalStoryPromoColumns,
-  };
-};
-
-const getSectionLayout = items => {
-  const topColumns = {
-    2: { ...defaultColumns, group4: 6, group5: 6 },
-    1: fullWidthStoryPromoColumns,
-    0: normalStoryPromoColumns,
-  };
-
-  /* We check if the number of items is divisible by four
-     If the number of items is divisible by 4 then the storypromo should span 2 columns
-     If the remainder is 1 we the story promo should span the whole width
-     If the remainder is 2 then we should have two stories on the row with one being a leading story promo
-  */
-  let remainder = items.length % 4;
-  let itemsToDisplay = items.length;
-  if (remainder > 2) {
-    itemsToDisplay = items.length - 1;
-    remainder = 2;
+  @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
+    padding: ${GEL_SPACING_DBL} 0.5rem ${GEL_SPACING_DBL};
   }
 
-  return {
-    isLeadingStory: index => index === 0 && remainder === 2,
-    isTopStory: index => index === 0 && remainder === 1,
-    itemsToDisplay,
-    imageDisplayThreshold: items.length,
-    columns: index =>
-      index === 0 ? topColumns[remainder] : normalStoryPromoColumns,
-  };
-};
+  @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
+    padding: ${GEL_SPACING_TRPL} 0.5rem ${GEL_SPACING_TRPL};
+  }
 
-const renderStoryPromoList = (groupType, items, isFirstSection) => {
-  const {
-    itemsToDisplay,
-    imageDisplayThreshold,
-    isTopStory,
-    isLeadingStory,
-    columns,
-  } =
-    groupType === 'top-stories'
-      ? getTopStoryLayout(items)
-      : getSectionLayout(items);
-
-  const storyPromoUlStyles = css`
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-  `;
-  const GridList = styled(Grid)`
-    ${storyPromoUlStyles}
-  `;
-  const GridListItem = styled(Grid)`
-    border-bottom: 0.0625rem solid ${C_LUNAR};
-    padding: ${GEL_SPACING} 0 ${GEL_SPACING_DBL};
+  @supports (${grid}) {
+    padding: ${GEL_SPACING} 0rem ${GEL_SPACING_DBL};
 
     @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
-      padding: ${GEL_SPACING_DBL} 0 ${GEL_SPACING_DBL};
+      padding: ${GEL_SPACING_DBL} 0rem ${GEL_SPACING_DBL};
     }
 
     @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
-      padding: ${GEL_SPACING_TRPL} 0 ${GEL_SPACING_TRPL};
+      padding: ${GEL_SPACING_TRPL} 0rem ${GEL_SPACING_TRPL};
+    }
+  }
+
+  &:first-child {
+    padding-top: 0;
+
+    @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
+      padding-top: 1rem;
     }
 
-    &:first-child {
-      padding-top: 0;
-
-      @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
-        padding-top: 1rem;
-      }
-
-      @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
-        padding-top: 1.5rem;
-      }
+    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
+      padding-top: 1.5rem;
     }
+  }
 
-    &:last-child {
-      padding-bottom: 0;
-      border: none;
-    }
-  `;
+  &:last-child {
+    padding-bottom: 0;
+    border: none;
+  }
+`;
+
+// Split items into slices
+const getItemLimit = (items, isFirstSection) =>
+  isFirstSection ? take(13, items) : take(10, items);
+
+// Split the top row stories out into their own list
+const splitTopRowSlice = (items, isFirstSection) => {
+  // First section always has a single top story
+  if (isFirstSection || items.length % 4 === 1) {
+    return splitAt(1, items);
+  }
+  if (items.length % 4 > 1) {
+    return splitAt(2, items);
+  }
+  return splitAt(0, items);
+};
+
+// Split into fours and make sure slices only go through if a four
+const splitStandardSlices = items =>
+  splitEvery(4, items).filter(itemList => itemList.length === 4);
+
+// Anything beyond the first 2 fours goes into an imageless slice
+const splitNoImageSlices = standardSlices => splitAt(2, standardSlices);
+
+const getItems = (items, isFirstSection) => {
+  const presentStories = getItemLimit(items, isFirstSection);
+
+  const [topRowItems, unsplitStandardItems] = splitTopRowSlice(
+    presentStories,
+    isFirstSection,
+  );
+  const [standardItems, [noImageItems]] = splitNoImageSlices(
+    splitStandardSlices(unsplitStandardItems),
+  );
+
+  return {
+    topRowItems,
+    standardItems,
+    noImageItems,
+  };
+};
+
+// Slice rendering
+const renderTopStorySlice = (items, isFirstSection) => (
+  <GridListItem
+    item
+    columns={fullWidthStoryPromoColumns}
+    parentColumns={fullWidthStoryPromoColumns}
+    key={items[0].id}
+    forwardedAs="li"
+    role="listitem"
+  >
+    <StoryPromoComponent
+      item={items[0]}
+      topStory
+      displayImage
+      isFirstSection={isFirstSection}
+    />
+  </GridListItem>
+);
+
+const renderLeadingStorySlice = items => (
+  <>
+    <GridListItem
+      item
+      columns={{ ...defaultColumns, group4: 6, group5: 6 }}
+      parentColumns={fullWidthStoryPromoColumns}
+      key={items[0].id}
+      forwardedAs="li"
+      role="listitem"
+    >
+      <StoryPromoComponent
+        item={items[0]}
+        displayImage
+        isLeading
+        topStory={false}
+      />
+    </GridListItem>
+    <GridListItem
+      item
+      parentColumns={fullWidthStoryPromoColumns}
+      columns={normalStoryPromoColumns}
+      key={items[1].id}
+      forwardedAs="li"
+      role="listitem"
+    >
+      <StoryPromoComponent item={items[1]} displayImage topStory={false} />
+    </GridListItem>
+  </>
+);
+
+const renderTopSlice = (items, isFirstSection) =>
+  items.length === 1
+    ? renderTopStorySlice(items, isFirstSection)
+    : renderLeadingStorySlice(items);
+
+const renderNormalSlice = (items, isFirstSection, index) => (
+  <React.Fragment key={index}>
+    {items.map(item => (
+      <GridListItem
+        item
+        parentColumns={fullWidthStoryPromoColumns}
+        columns={normalStoryPromoColumns}
+        key={item.id}
+        forwardedAs="li"
+        role="listitem"
+      >
+        <StoryPromoComponent
+          item={item}
+          displayImage
+          isFirstSection={isFirstSection}
+          topStory={false}
+        />
+      </GridListItem>
+    ))}
+  </React.Fragment>
+);
+
+const renderImagelessSlice = items => (
+  <>
+    {items.map(item => (
+      <GridListItem
+        item
+        columns={normalStoryPromoColumns}
+        parentColumns={fullWidthStoryPromoColumns}
+        key={item.id}
+        forwardedAs="li"
+        role="listitem"
+      >
+        <StoryPromoComponent
+          item={item}
+          isFirstSection
+          topStory={false}
+          displayImage={false}
+        />
+      </GridListItem>
+    ))}
+  </>
+);
+
+const renderSlices = (slices, isFirstSection) => {
+  const topSlice =
+    slices.topRowItems.length > 0 &&
+    renderTopSlice(slices.topRowItems, isFirstSection);
+  const normalSlices =
+    slices.standardItems.length > 0 &&
+    slices.standardItems.map((slice, index) =>
+      renderNormalSlice(slice, isFirstSection, index),
+    );
+  const imagelessSlice =
+    slices.noImageItems &&
+    slices.noImageItems.length > 0 &&
+    renderImagelessSlice(slices.noImageItems);
+  return (
+    <>
+      {topSlice}
+      {normalSlices}
+      {imagelessSlice}
+    </>
+  );
+};
+
+const renderStoryPromoList = (groupType, items, isFirstSection) => {
+  const slices = getItems(items, isFirstSection);
 
   return (
     <GridList
@@ -232,29 +344,7 @@ const renderStoryPromoList = (groupType, items, isFirstSection) => {
       enableGelGutters
       columns={fullWidthStoryPromoColumns}
     >
-      {items.slice(0, itemsToDisplay).map((item, index) => {
-        const topStory = isTopStory(index);
-        const displayImage = index < imageDisplayThreshold;
-        const isLeading = isLeadingStory(index);
-        const groups = columns(index);
-        return (
-          <GridListItem
-            item
-            columns={groups}
-            key={item.id}
-            as="li"
-            role="listitem"
-          >
-            <StoryPromoComponent
-              item={item}
-              topStory={topStory}
-              displayImage={displayImage}
-              isFirstSection={isFirstSection}
-              isLeading={isLeading}
-            />
-          </GridListItem>
-        );
-      })}
+      {renderSlices(slices, isFirstSection)}
     </GridList>
   );
 };
