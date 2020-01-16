@@ -25,17 +25,17 @@ const splitNoImageSlices = standardSlices => splitAt(2, standardSlices);
 const getItems = (items, isFirstSection) => {
   const presentStories = getItemLimit(items, isFirstSection);
 
-  const [topRowItems, unsplitStandardItems] = splitTopRowSlice(
+  const [featuredSliceItems, unsplitregularItems] = splitTopRowSlice(
     presentStories,
     isFirstSection,
   );
-  const [standardItems, [noImageItems]] = splitNoImageSlices(
-    splitStandardSlices(unsplitStandardItems),
+  const [regularItems, [noImageItems]] = splitNoImageSlices(
+    splitStandardSlices(unsplitregularItems),
   );
 
   return {
-    topRowItems,
-    standardItems,
+    featuredSliceItems,
+    regularItems,
     noImageItems: noImageItems || [],
   };
 };

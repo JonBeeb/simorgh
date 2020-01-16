@@ -120,14 +120,14 @@ LeadingStorySlice.propTypes = {
   items: arrayOf(shape(storyItem)).isRequired,
 };
 
-const TopSlice = ({ items, isFirstSection }) =>
+const FeaturedSlice = ({ items, isFirstSection }) =>
   items.length === 1 ? (
     <TopStorySlice items={items} isFirstSection={isFirstSection} />
   ) : (
     <LeadingStorySlice items={items} />
   );
 
-TopSlice.propTypes = {
+FeaturedSlice.propTypes = {
   items: arrayOf(shape(storyItem)).isRequired,
   isFirstSection: bool.isRequired,
 };
@@ -186,12 +186,15 @@ NoImageSlice.propTypes = {
 };
 
 const Slices = ({ slices, isFirstSection }) => {
-  const topSlice = slices.topRowItems.length > 0 && (
-    <TopSlice items={slices.topRowItems} isFirstSection={isFirstSection} />
+  const featuredSlice = slices.featuredSliceItems.length > 0 && (
+    <FeaturedSlice
+      items={slices.featuredSliceItems}
+      isFirstSection={isFirstSection}
+    />
   );
   const normalSlices =
-    slices.standardItems.length > 0 &&
-    slices.standardItems.map(slice => (
+    slices.regularItems.length > 0 &&
+    slices.regularItems.map(slice => (
       <RegularSlice
         items={slice}
         isFirstSection={isFirstSection}
@@ -203,7 +206,7 @@ const Slices = ({ slices, isFirstSection }) => {
   );
   return (
     <>
-      {topSlice}
+      {featuredSlice}
       {normalSlices}
       {imagelessSlice}
     </>
@@ -212,8 +215,8 @@ const Slices = ({ slices, isFirstSection }) => {
 
 Slices.propTypes = {
   slices: shape({
-    topRowItems: arrayOf(shape(storyItem)),
-    standardItems: arrayOf(arrayOf(shape(storyItem))),
+    featuredSliceItems: arrayOf(shape(storyItem)),
+    regularItems: arrayOf(arrayOf(shape(storyItem))),
     noImageItems: arrayOf(shape(storyItem)),
   }).isRequired,
   isFirstSection: bool.isRequired,
