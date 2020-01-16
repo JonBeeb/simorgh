@@ -12,17 +12,17 @@ import {
   GEL_SPACING_TRPL,
   GEL_SPACING_QUAD,
 } from '@bbc/gel-foundations/spacings';
-import { grid } from '@bbc/psammead-styles/detection';
 import SectionLabel from '@bbc/psammead-section-label';
-import { C_LUNAR } from '@bbc/psammead-styles/colours';
 import pathOr from 'ramda/src/pathOr';
 import { splitEvery, splitAt, take } from 'ramda';
 import UsefulLinksComponent from './UsefulLinks';
 import { ServiceContext } from '#contexts/ServiceContext';
-import StoryPromo from '../StoryPromo';
 import groupShape from '#models/propTypes/frontPageGroup';
 import { storyItem } from '#models/propTypes/storyItem';
 import idSanitiser from '#lib/utilities/idSanitiser';
+import Slices from './Slices';
+import StoryPromoComponent from './StoryPromoComponent';
+import { fullWidthStoryPromoColumns } from './gridColumns';
 
 // Apply the right margin-top to the first section of the page when there is one or multiple items.
 const FirstSectionTopMargin = styled.div`
@@ -73,104 +73,11 @@ const MarginWrapper = ({ isFirstSection, oneItem, children }) => {
   return children;
 };
 
-const StoryPromoComponent = ({
-  item,
-  topStory,
-  displayImage,
-  isLeading,
-  isFirstSection,
-}) => {
-  const lazyLoadImage = !(topStory && isFirstSection); // don't lazy load image if it is a top story
-  return (
-    <StoryPromo
-      item={item}
-      topStory={topStory}
-      lazyLoadImage={lazyLoadImage}
-      displayImage={displayImage}
-      isLeading={isLeading}
-    />
-  );
-};
-
-StoryPromoComponent.propTypes = {
-  item: shape(storyItem).isRequired,
-  topStory: bool.isRequired,
-  displayImage: bool,
-  isLeading: bool,
-  isFirstSection: bool,
-};
-
-StoryPromoComponent.defaultProps = {
-  displayImage: true,
-  isLeading: false,
-  isFirstSection: false,
-};
-
-const defaultColumns = {
-  group0: 6,
-  group1: 6,
-  group2: 6,
-  group3: 6,
-};
-
-const fullWidthStoryPromoColumns = {
-  ...defaultColumns,
-  group4: 8,
-  group5: 8,
-};
-
-const normalStoryPromoColumns = {
-  ...defaultColumns,
-  group4: 2,
-  group5: 2,
-};
-
 // Style grid
 const GridList = styled(Grid)`
   list-style-type: none;
   margin: 0;
   padding: 0;
-`;
-const GridListItem = styled(Grid)`
-  border-bottom: 0.0625rem solid ${C_LUNAR};
-  padding: ${GEL_SPACING} 0.5rem ${GEL_SPACING_DBL};
-
-  @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
-    padding: ${GEL_SPACING_DBL} 0.5rem ${GEL_SPACING_DBL};
-  }
-
-  @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
-    padding: ${GEL_SPACING_TRPL} 0.5rem ${GEL_SPACING_TRPL};
-  }
-
-  @supports (${grid}) {
-    padding: ${GEL_SPACING} 0rem ${GEL_SPACING_DBL};
-
-    @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
-      padding: ${GEL_SPACING_DBL} 0rem ${GEL_SPACING_DBL};
-    }
-
-    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
-      padding: ${GEL_SPACING_TRPL} 0rem ${GEL_SPACING_TRPL};
-    }
-  }
-
-  &:first-child {
-    padding-top: 0;
-
-    @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
-      padding-top: 1rem;
-    }
-
-    @media (min-width: ${GEL_GROUP_4_SCREEN_WIDTH_MIN}) {
-      padding-top: 1.5rem;
-    }
-  }
-
-  &:last-child {
-    padding-bottom: 0;
-    border: none;
-  }
 `;
 
 // Split items into slices
@@ -214,126 +121,6 @@ const getItems = (items, isFirstSection) => {
   };
 };
 
-// Slice rendering
-const renderTopStorySlice = (items, isFirstSection) => (
-  <GridListItem
-    item
-    columns={fullWidthStoryPromoColumns}
-    parentColumns={fullWidthStoryPromoColumns}
-    key={items[0].id}
-    forwardedAs="li"
-    role="listitem"
-  >
-    <StoryPromoComponent
-      item={items[0]}
-      topStory
-      displayImage
-      isFirstSection={isFirstSection}
-    />
-  </GridListItem>
-);
-
-const renderLeadingStorySlice = items => (
-  <>
-    <GridListItem
-      item
-      columns={{ ...defaultColumns, group4: 6, group5: 6 }}
-      parentColumns={fullWidthStoryPromoColumns}
-      key={items[0].id}
-      forwardedAs="li"
-      role="listitem"
-    >
-      <StoryPromoComponent
-        item={items[0]}
-        displayImage
-        isLeading
-        topStory={false}
-      />
-    </GridListItem>
-    <GridListItem
-      item
-      parentColumns={fullWidthStoryPromoColumns}
-      columns={normalStoryPromoColumns}
-      key={items[1].id}
-      forwardedAs="li"
-      role="listitem"
-    >
-      <StoryPromoComponent item={items[1]} displayImage topStory={false} />
-    </GridListItem>
-  </>
-);
-
-const renderTopSlice = (items, isFirstSection) =>
-  items.length === 1
-    ? renderTopStorySlice(items, isFirstSection)
-    : renderLeadingStorySlice(items);
-
-const renderNormalSlice = (items, isFirstSection, index) => (
-  <React.Fragment key={index}>
-    {items.map(item => (
-      <GridListItem
-        item
-        parentColumns={fullWidthStoryPromoColumns}
-        columns={normalStoryPromoColumns}
-        key={item.id}
-        forwardedAs="li"
-        role="listitem"
-      >
-        <StoryPromoComponent
-          item={item}
-          displayImage
-          isFirstSection={isFirstSection}
-          topStory={false}
-        />
-      </GridListItem>
-    ))}
-  </React.Fragment>
-);
-
-const renderImagelessSlice = items => (
-  <>
-    {items.map(item => (
-      <GridListItem
-        item
-        columns={normalStoryPromoColumns}
-        parentColumns={fullWidthStoryPromoColumns}
-        key={item.id}
-        forwardedAs="li"
-        role="listitem"
-      >
-        <StoryPromoComponent
-          item={item}
-          isFirstSection
-          topStory={false}
-          displayImage={false}
-        />
-      </GridListItem>
-    ))}
-  </>
-);
-
-const renderSlices = (slices, isFirstSection) => {
-  const topSlice =
-    slices.topRowItems.length > 0 &&
-    renderTopSlice(slices.topRowItems, isFirstSection);
-  const normalSlices =
-    slices.standardItems.length > 0 &&
-    slices.standardItems.map((slice, index) =>
-      renderNormalSlice(slice, isFirstSection, index),
-    );
-  const imagelessSlice =
-    slices.noImageItems &&
-    slices.noImageItems.length > 0 &&
-    renderImagelessSlice(slices.noImageItems);
-  return (
-    <>
-      {topSlice}
-      {normalSlices}
-      {imagelessSlice}
-    </>
-  );
-};
-
 const renderStoryPromoList = (groupType, items, isFirstSection) => {
   const slices = getItems(items, isFirstSection);
 
@@ -344,7 +131,7 @@ const renderStoryPromoList = (groupType, items, isFirstSection) => {
       enableGelGutters
       columns={fullWidthStoryPromoColumns}
     >
-      {renderSlices(slices, isFirstSection)}
+      <Slices slices={slices} isFirstSection={isFirstSection} />
     </GridList>
   );
 };
