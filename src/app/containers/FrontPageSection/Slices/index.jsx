@@ -198,10 +198,9 @@ const Slices = ({ slices, isFirstSection }) => {
         key={slice[0].id}
       />
     ));
-  const imagelessSlice = slices.noImageItems &&
-    slices.noImageItems.length > 0 && (
-      <NoImageSlice items={slices.noImageItems} />
-    );
+  const imagelessSlice = slices.noImageItems.length > 0 && (
+    <NoImageSlice items={slices.noImageItems} />
+  );
   return (
     <>
       {topSlice}
