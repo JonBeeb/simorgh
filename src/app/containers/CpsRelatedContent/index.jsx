@@ -15,10 +15,10 @@ import {
 import { RequestContext } from '#contexts/RequestContext';
 import { storyItem } from '#models/propTypes/storyItem';
 import { ServiceContext } from '#contexts/ServiceContext';
-import { GhostGrid, GridItemConstrainedLarge } from '#lib/styledGrid';
+import Grid, { GelPageGrid } from '#app/components/Grid';
 import StoryPromo from '../StoryPromo';
 
-const Wrapper = styled(GridItemConstrainedLarge)`
+const StyledGrid = styled(Grid)`
   margin-bottom: ${GEL_SPACING_DBL};
   @media (min-width: ${GEL_GROUP_3_SCREEN_WIDTH_MIN}) {
     margin-bottom: ${GEL_SPACING_TRPL};
@@ -45,12 +45,29 @@ const CpsRelatedContent = ({ content }) => {
   if (!content.length) return null;
 
   return (
-    <GhostGrid
+    <GelPageGrid
       as="aside"
       role="complementary"
       aria-labelledby="related-content-heading"
     >
-      <Wrapper>
+      <StyledGrid
+        startOffset={{
+          group0: 1,
+          group1: 1,
+          group2: 1,
+          group3: 1,
+          group4: 2,
+          group5: 5,
+        }}
+        columns={{
+          group0: 6,
+          group1: 6,
+          group2: 6,
+          group3: 6,
+          group4: 8,
+          group5: 12,
+        }}
+      >
         <SectionLabel
           script={script}
           service={service}
@@ -69,8 +86,8 @@ const CpsRelatedContent = ({ content }) => {
               </StoryPromoLi>
             ))}
         </StoryPromoUl>
-      </Wrapper>
-    </GhostGrid>
+      </StyledGrid>
+    </GelPageGrid>
   );
 };
 
